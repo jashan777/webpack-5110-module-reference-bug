@@ -14,15 +14,41 @@ application code — the pattern below is ordinary and unchanged.
 ## Run it
 
 ```bash
-./verify.sh          # builds on 5.109.2 and 5.110.2, prints the table below
+./verify.sh     # builds both cases on 5.109.2 and 5.110.2, colour-coded
 ```
 
-| webpack | pattern | leaked tokens | result |
-|---------|---------|---------------|--------|
-| 5.109.2 | whole-namespace `require()` | 0 | ✅ works |
-| **5.110.2** | **whole-namespace `require()`** | **4** | ❌ **ReferenceError** |
-| 5.110.2 | property taken at require site | 0 | ✅ works |
-| 5.110.2 | `concatenateModules: false` | 0 | ✅ works |
+Eight builds, and only the 5.110.2 whole-namespace rows go red:
+
+```
+                                        5.109.2      5.110.2
+    01-minimal   whole-namespace        works        BREAKS
+    02-app-like  whole-namespace        works        BREAKS
+    02-app-like  fix at require site    works        works
+    02-app-like  concatenateModules:0   works        works
+```
+
+## Two reproductions
+
+**`01-minimal/`** - 23 lines, no application code. Proves the fault is webpack's.
+
+```js
+// route.js
+export function load() {
+  return new Promise(resolve => {
+    require.ensure([], require => {
+      const whole = require("./mod.js");        // whole module object captured
+      resolve([whole.NAME, whole.default]);
+    }, "chunk");
+  });
+}
+```
+
+**`02-app-like/`** - mirrors `src/routes/routes/Teacher/index.js`: an
+`injectReducer` store helper, ESM modules exporting `NAME` + `default`, and a
+route that mixes both require styles. Reproduces all **four** leaked tokens seen
+in the real production bundle, with the same variable names. It also carries the
+fixed variant (`index.fixed.js`) and the `concatenateModules: false` toggle, so
+both remedies can be demonstrated side by side.
 
 ## What triggers it
 
@@ -101,7 +127,7 @@ disables scope hoisting bundle-wide. Measured on the real app: **+4.8 MB,
 ## Layout
 
 ```
-src/store.js                          injectReducer stand-in
+02-app-like/src/store.js               injectReducer stand-in
 src/modules/*.js                      ESM modules exporting NAME + default
 src/routes/Teacher/index.js           the failing pattern
 src/routes/Teacher/index.fixed.js     the fix
