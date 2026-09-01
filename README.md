@@ -17,14 +17,14 @@ application code — the pattern below is ordinary and unchanged.
 ./verify.sh     # builds both cases on 5.109.2 and 5.110.2, colour-coded
 ```
 
-Eight builds, and only the 5.110.2 whole-namespace rows go red:
+Eight builds. Only one goes red:
 
 ```
-                                        5.109.2      5.110.2
-    01-minimal   whole-namespace        works        BREAKS
-    02-app-like  whole-namespace        works        BREAKS
-    02-app-like  fix at require site    works        works
-    02-app-like  concatenateModules:0   works        works
+                                     5.109.2      5.110.2
+  whole-module require()             works        BREAKS
+    + fix at require site            works        works
+    + concatenateModules{commonjs:0} works        works
+    + concatenateModules:false       works        works
 ```
 
 ## The reproduction
@@ -145,10 +145,10 @@ As of webpack **5.110.2** (latest release) this reproduction still fails.
 ## Layout
 
 ```
-02-app-like/src/store.js               injectReducer stand-in
-src/modules/*.js                      ESM modules exporting NAME + default
-src/routes/Teacher/index.js           the failing pattern
-src/routes/Teacher/index.fixed.js     the fix
-webpack.config.js                     USE_FIX=1 / CONCATENATE=0 toggles
-verify.sh                             builds every combination
+src/mod.js            an ESM module exporting NAME + default
+src/route.js          the failing pattern
+src/route.fixed.js    the fix
+src/index.js          entry
+webpack.config.js     USE_FIX=1 / CONCATENATE=0 / CONCATENATE=nocjs toggles
+verify.sh             builds every combination on both webpack versions
 ```
