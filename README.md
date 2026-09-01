@@ -27,12 +27,12 @@ Eight builds, and only the 5.110.2 whole-namespace rows go red:
     02-app-like  concatenateModules:0   works        works
 ```
 
-## Two reproductions
+## The reproduction
 
-**`01-minimal/`** - 23 lines, no application code. Proves the fault is webpack's.
+24 lines of source, no framework and no application code:
 
 ```js
-// route.js
+// src/route.js
 export function load() {
   return new Promise(resolve => {
     require.ensure([], require => {
@@ -43,12 +43,9 @@ export function load() {
 }
 ```
 
-**`02-app-like/`** - mirrors `src/routes/routes/Teacher/index.js`: an
-`injectReducer` store helper, ESM modules exporting `NAME` + `default`, and a
-route that mixes both require styles. Reproduces all **four** leaked tokens seen
-in the real production bundle, with the same variable names. It also carries the
-fixed variant (`index.fixed.js`) and the `concatenateModules: false` toggle, so
-both remedies can be demonstrated side by side.
+`src/mod.js` is an ordinary ESM module exporting `NAME` and a `default`.
+`src/route.fixed.js` sits beside it with the one-line fix, so the diff is a
+single file open.
 
 ## What triggers it
 
