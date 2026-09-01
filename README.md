@@ -1,29 +1,32 @@
 # webpack ≥ 5.110.0 leaks an internal placeholder into production output
 
-webpack emits its own unsubstituted internal token,
-`__WEBPACK_MODULE_REFERENCE__…__`, into the shipped bundle. The file parses, so
-the build succeeds — it throws only when that line runs:
+webpack emits one of its own internal placeholders,
+`__WEBPACK_MODULE_REFERENCE__…__`, unsubstituted into the production bundle.
+
+The result is a valid JavaScript identifier that was never declared, so the
+build succeeds with no error or warning and it fails only at runtime:
 
 ```
 ReferenceError: __webpack_require____WEBPACK_MODULE_REFERENCE__0_ns_moduleExportsAccess_asiSafe1__ is not defined
 ```
 
-Regression introduced in **5.110.0**. Still present in **5.110.2** (latest).
+Works on 5.109.2. Breaks from 5.110.0 through 5.110.2 (latest).
 
-## Run it
+## Reproduce
 
 ```bash
-./verify.sh
+npm install
+npx webpack        # succeeds
+node dist/main.js  # ReferenceError
 ```
 
-Builds the reproduction on 5.109.2 and 5.110.2. Six builds; only one goes red:
+`dist/main.js` is left unminified, so the leaked token is visible:
 
+```js
+const whole = __webpack_require____WEBPACK_MODULE_REFERENCE__0_ns_moduleExportsAccess_asiSafe1__._;
 ```
-                                     5.109.2      5.110.2
-  whole-module require()             works        BREAKS
-    + concatenateModules{commonjs:0} works        works
-    + concatenateModules:false       works        works
-```
+
+Install `webpack@5.109.2` instead, with the same source and config, and it works.
 
 ## The reproduction
 
@@ -40,14 +43,6 @@ export function load() {
 ```
 
 `src/mod.js` is an ordinary ESM module exporting `NAME` and a `default`.
-
-What lands in `dist/main.js` (left unminified on purpose):
-
-```js
-const whole = __webpack_require____WEBPACK_MODULE_REFERENCE__0_ns_moduleExportsAccess_asiSafe1__._;
-```
-
-A valid JavaScript identifier that was never declared.
 
 ## What triggers it
 
@@ -78,9 +73,10 @@ Destructuring is **not** a fix — it still leaks the placeholder:
 const { NAME, default: d } = require("./mod.js");   // still broken
 ```
 
-If the call sites cannot change, `optimization.concatenateModules:
-{ commonjs: false }` avoids it while keeping ESM scope hoisting.
-`concatenateModules: false` also works, but disables scope hoisting bundle-wide.
+If the call sites cannot change, set `optimization.concatenateModules` to
+`{ commonjs: false }` to keep ESM scope hoisting, or `false` to disable it
+bundle-wide. Both avoid the bug; `CONCATENATE=nocjs` and `CONCATENATE=0` select
+them in `webpack.config.js`.
 
 ## Cause
 
@@ -91,13 +87,3 @@ If the call sites cannot change, `optimization.concatenateModules:
 `neededNamespaceObjects.add(info)`, then reads `info.namespaceObjectName` behind
 a non-null cast. When that name is not yet assigned, nothing replaces the
 placeholder and it reaches the output.
-
-## Layout
-
-```
-src/index.js       entry
-src/route.js       the failing pattern
-src/mod.js         an ESM module exporting NAME + default
-webpack.config.js  CONCATENATE=0 / CONCATENATE=nocjs toggles
-verify.sh          builds every combination on both webpack versions
-```

@@ -4,8 +4,11 @@
   "private": true,
   "description": "Minimal reproduction: webpack >= 5.110.0 leaks an unsubstituted __WEBPACK_MODULE_REFERENCE__ placeholder into production output",
   "scripts": {
-    "verify": "./verify.sh",
     "build": "webpack --config webpack.config.js",
     "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "webpack": "5.110.2",
+    "webpack-cli": "5.1.4"
   }
 }
