@@ -43,6 +43,7 @@ for V in 5.109.2 5.110.2; do
   printf "\n  ${B}02-app-like${X} ${D}- mirrors routes/Teacher/index.js${X}\n"
   USE_FIX=0 CONCATENATE=1 build 02-app-like; report 02-app-like "whole-namespace require()"
   USE_FIX=1 CONCATENATE=1 build 02-app-like; report 02-app-like "  + fix at require site"
+  USE_FIX=0 CONCATENATE=nocjs build 02-app-like; report 02-app-like "  + concatenateModules:{commonjs:0}"
   USE_FIX=0 CONCATENATE=0 build 02-app-like; report 02-app-like "  + concatenateModules:false"
 done
 
@@ -58,6 +59,7 @@ printf "                                        ${B}5.109.2      5.110.2${X}\n"
 printf "    01-minimal   whole-namespace        ${G}works${X}        ${R}${B}BREAKS${X}\n"
 printf "    02-app-like  whole-namespace        ${G}works${X}        ${R}${B}BREAKS${X}\n"
 printf "    02-app-like  fix at require site    ${G}works${X}        ${G}works${X}\n"
+printf "    02-app-like  concatenate{commonjs:0}  ${G}works${X}      ${G}works${X}\n"
 printf "    02-app-like  concatenateModules:0   ${G}works${X}        ${G}works${X}\n"
 printf "\n    ${B}Verdict:${X} webpack regression introduced in 5.110.0 (PR #21519).\n"
 printf "    ${D}Application code is unchanged and valid; 23 lines with no app code reproduce it.${X}\n\n"

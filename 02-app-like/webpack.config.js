@@ -26,7 +26,12 @@ module.exports = {
     // left readable so the leaked placeholder is visible in dist/main.js
     minimize: false,
     // set to false and the bug disappears -- that is the blunt workaround
-    concatenateModules: process.env.CONCATENATE === "0" ? false : true,
+    concatenateModules:
+      process.env.CONCATENATE === "0"
+        ? false
+        : process.env.CONCATENATE === "nocjs"
+          ? { commonjs: false }   // targeted: keeps ESM scope hoisting
+          : true,
   },
   devtool: false,
   target: "node",

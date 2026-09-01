@@ -120,9 +120,30 @@ injectReducer(store, {
 const { NAME, default: reducer } = require("./modules/WorksheetModules.js"); // ❌
 ```
 
-**Blunt workaround:** `optimization.concatenateModules: false`. Fixes it, but
-disables scope hoisting bundle-wide. Measured on the real app: **+4.8 MB,
+**Targeted workaround** (verified here) — disables only CommonJS concatenation,
+keeps ESM scope hoisting:
+
+```js
+optimization: { concatenateModules: { commonjs: false } }
+```
+
+**Blunt workaround:** `optimization.concatenateModules: false`. Also fixes it,
+but disables scope hoisting bundle-wide. Measured on the real app: **+4.8 MB,
 +2.6%** across 564 assets.
+
+## Related, but not the same bug
+
+A cluster of `#21519` regressions was filed and fixed in the same window. All
+are *interop wrapping* faults (a value becomes `{ default: … }`); none is this
+placeholder leak:
+
+| issue | symptom | status |
+|-------|---------|--------|
+| [#21882](https://github.com/webpack/webpack/issues/21882) | `require()` of CJS returns `{default: exports}` | fixed by [#21884](https://github.com/webpack/webpack/pull/21884), **unreleased** |
+| [#21899](https://github.com/webpack/webpack/issues/21899) | asset module becomes `{default: …}` via `.cw` wrapper | closed |
+| [#21873](https://github.com/webpack/webpack/issues/21873) | `X_namespaceFn is not a constructor` | closed |
+
+As of webpack **5.110.2** (latest release) this reproduction still fails.
 
 ## Layout
 
