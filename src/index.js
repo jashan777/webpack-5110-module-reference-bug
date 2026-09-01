@@ -1,4 +1,4 @@
-import { load } from "Route";
+import { load } from "./route.js";
 
 load()
   .then(r => console.log("OK   --", JSON.stringify(r)))

@@ -1,9 +1,7 @@
 const path = require("path");
 
-// USE_FIX=1        -> build the fixed route instead of the broken one
-// CONCATENATE=0    -> disable scope hoisting entirely
-// CONCATENATE=nocjs-> disable it for CommonJS only, keeping ESM scope hoisting
-const useFix = process.env.USE_FIX === "1";
+// CONCATENATE=0     -> disable scope hoisting entirely
+// CONCATENATE=nocjs -> disable it for CommonJS only, keeping ESM scope hoisting
 const concat = process.env.CONCATENATE;
 
 module.exports = {
@@ -16,11 +14,6 @@ module.exports = {
     filename: "main.js",
     chunkFilename: "[name].chunk.js",
     clean: true,
-  },
-  resolve: {
-    alias: {
-      Route: path.resolve(__dirname, useFix ? "src/route.fixed.js" : "src/route.js"),
-    },
   },
   optimization: {
     // left readable so the leaked placeholder is visible in dist/main.js
